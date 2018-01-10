@@ -6,6 +6,7 @@ import com.sun.org.apache.xpath.internal.operations.Mod;
 import models.Post;
 import spark.ModelAndView;
 import spark.template.handlebars.HandlebarsTemplateEngine;
+import sun.jvm.hotspot.oops.ObjectHeap;
 
 import javax.print.DocFlavor;
 
@@ -17,16 +18,15 @@ public class App {
         staticFileLocation("/public");
 
         //get: show new post form
-        get("/posts/new", (request, response) ->  {
+        get("/posts/new", (req, res) ->  {
             Map<String, Object> model = new HashMap<>();
-            return new ModelAndView(model, "newpost-form.hbs");
+            return new ModelAndView(model, "post-form.hbs");
         }, new HandlebarsTemplateEngine());
 
         //post: process new post form
-        post("/posts/new", (request, response) -> { //URL to make new post on POST route
+        post("/posts/new", (req, res) -> { //URL to make new post on POST route
             Map<String, Object> model = new HashMap<>();
-
-            String content = request.queryParams("content");
+            String content = req.queryParams("content");
             Post newPost = new Post(content);
             model.put("post", newPost);
             return new ModelAndView(model, "success.hbs");
@@ -41,6 +41,13 @@ public class App {
             return new ModelAndView(model, "index.hbs");
         }, new HandlebarsTemplateEngine());
 
+        //get: delete all posts
+        get("/posts/delete", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            Post.clearAllPosts();
+            return new ModelAndView(model, "success.hbs");
+        }, new HandlebarsTemplateEngine());
+
         //get: show an individual post
         get("/posts/:id", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
@@ -50,12 +57,30 @@ public class App {
             return new ModelAndView(model, "post-detail.hbs"); //individual post page.
         }, new HandlebarsTemplateEngine());
         //get: show a form to update a post
+        get("/posts/:id/update", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            int idOfPostToEdit = Integer.parseInt(req.params("id"));
+            Post editPost = Post.findById(idOfPostToEdit);
+            model.put("editPost", editPost);
+            return new ModelAndView(model, "post-form.hbs");
+        }, new HandlebarsTemplateEngine());
 
         //post: process a form to update a post
-
+        post("/posts/:id/update", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            String newContent = req.queryParams("content");
+            int idOfPostToEdit = Integer.parseInt(req.params("id"));
+            Post editPost = Post.findById(idOfPostToEdit);
+            editPost.update(newContent); //don’t forget me
+            return new ModelAndView(model, "success.hbs");
+        }, new HandlebarsTemplateEngine());
         //get: delete an individual post
-
-        //get: delete all posts
-
+        get("posts/:id/delete", (request, response) -> {
+            Map<String, Object> model = new HashMap<>();
+            int idOfPostToDelete = Integer.parseInt(request.params("id"));
+            Post deletePost = Post.findById(idOfPostToDelete);
+            deletePost.deletePost();;
+            return new ModelAndView(model, "success.hbs");
+        }, new HandlebarsTemplateEngine());
     }
 }
